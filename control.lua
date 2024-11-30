@@ -187,7 +187,9 @@ end)
 
 -- Handle settings changes
 script.on_configuration_changed(function(data)
-  refresh_all_power_poles()
+  if data.mod_startup_settings_changed or data.mod_changes["power-propagation"] ~= nil then
+    refresh_all_power_poles()
+  end
 end)
 
 -- Event handler for when an entity is built
