@@ -1,0 +1,16 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.2.0
+Date: 2024-11-30
+  Features:
+    - Added settings to control whether power propagates through walls and rails
+---------------------------------------------------------------------------------------------------
+Version: 1.1.0
+Date: 2024-11-30
+  Bugfixes:
+    - Better handling of > 1 range
+    - No longer create power poles on surfaces with a global electric network
+---------------------------------------------------------------------------------------------------
+Version: 1.0.0
+Date: 2024-11-30
+  Features:
+    - Initial release
