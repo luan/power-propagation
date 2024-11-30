@@ -1,0 +1,9 @@
+{
+  "name": "power-propagation",
+  "version": "1.0.0",
+  "title": "Power Propagation",
+  "author": "YourName",
+  "factorio_version": "2.0",
+  "dependencies": ["base >= 2.0"],
+  "description": "Allows powered buildings to extend the power network to adjacent buildings with a configurable range."
+}
