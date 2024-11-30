@@ -1,4 +1,4 @@
-local range = settings.startup["power-propagation-range"].value
+local range_powered = settings.startup["power-propagation-range"].value
 
 local invisible_pole = table.deepcopy(data.raw["electric-pole"]["small-electric-pole"])
 invisible_pole.name = "power-propagation-invisible-pole"
@@ -56,6 +56,6 @@ invisible_pole.auto_connect_up_to_n_wires = 0
 for i = 1, 30 do
   local pole = table.deepcopy(invisible_pole)
   pole.name = "power-propagation-invisible-pole-" .. i
-  pole.supply_area_distance = 0.5 + i * 0.5 + range * 0.5
+  pole.supply_area_distance = 0.5 + i * 0.5 + range_powered * 0.5
   data:extend({ pole })
 end

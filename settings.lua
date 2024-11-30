@@ -8,4 +8,18 @@ data:extend({
     maximum_value = 10,
     order = "a",
   },
+  {
+    type = "bool-setting",
+    name = "power-propagation-through-walls",
+    setting_type = "startup",
+    default_value = false,
+    order = "b",
+  },
+  {
+    type = "bool-setting",
+    name = "power-propagation-through-rails",
+    setting_type = "startup",
+    default_value = false,
+    order = "c",
+  },
 })

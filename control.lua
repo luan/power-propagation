@@ -1,12 +1,21 @@
 -- Check if an entity can participate in power network
-local function can_handle_power(entity)
+local function should_extend_power(entity)
   if not (entity and entity.valid) then
     return false
   end
 
   -- Check if entity has an electric energy source
   local prototype = entity.prototype
-  return prototype and prototype.electric_energy_source_prototype ~= nil
+  if not prototype then
+    return false
+  end
+  return prototype.electric_energy_source_prototype ~= nil
+    or (settings.startup["power-propagation-through-walls"].value and prototype.type == "wall")
+    or (
+      settings.startup["power-propagation-through-rails"].value
+      and prototype.subgroup
+      and prototype.subgroup.name == "train-transport"
+    )
 end
 
 -- Connect two poles together
@@ -131,7 +140,7 @@ end
 
 -- Place power poles for an entity
 local function place_power_poles(entity)
-  if not (entity and entity.valid and can_handle_power(entity)) then
+  if not (entity and entity.valid and should_extend_power(entity)) then
     return
   end
 
@@ -141,14 +150,20 @@ end
 -- Refresh power poles for all entities
 local function refresh_all_power_poles()
   -- First remove all existing power poles
-  -- for _, surface in pairs(game.surfaces) do
-  --   local poles = surface.find_entities_filtered({ name = "power-propagation-invisible-pole" })
-  --   for _, pole in pairs(poles) do
-  --     if pole.valid then
-  --       pole.destroy()
-  --     end
-  --   end
-  -- end
+  local pole_types = {}
+  for i = 1, 30 do
+    table.insert(pole_types, "power-propagation-invisible-pole-" .. i)
+  end
+  for _, surface in pairs(game.surfaces) do
+    for _, pole_type in pairs(pole_types) do
+      local poles = surface.find_entities_filtered({ name = pole_type })
+      for _, pole in pairs(poles) do
+        if pole.valid then
+          pole.destroy()
+        end
+      end
+    end
+  end
 
   -- Clear stored positions
   storage.pole_positions = {}
@@ -157,7 +172,7 @@ local function refresh_all_power_poles()
   for _, surface in pairs(game.surfaces) do
     local entities = surface.find_entities()
     for _, entity in pairs(entities) do
-      if entity.valid and can_handle_power(entity) then
+      if entity.valid and should_extend_power(entity) then
         place_power_poles(entity)
       end
     end
@@ -167,13 +182,12 @@ end
 -- Initialize storage table
 script.on_init(function()
   storage.pole_positions = {}
+  refresh_all_power_poles()
 end)
 
 -- Handle settings changes
-script.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
-  if event.setting == "power-propagation-range" then
-    refresh_all_power_poles()
-  end
+script.on_configuration_changed(function(data)
+  refresh_all_power_poles()
 end)
 
 -- Event handler for when an entity is built
