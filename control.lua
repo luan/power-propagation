@@ -46,6 +46,10 @@ end
 
 -- Create an invisible power pole
 local function create_power_extender(surface, entity)
+  -- No need for power propagation if the surface has a global electric network
+  if surface.has_global_electric_network then
+    return nil
+  end
   if not entity.unit_number then
     return nil
   end

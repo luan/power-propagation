@@ -56,6 +56,6 @@ invisible_pole.auto_connect_up_to_n_wires = 0
 for i = 1, 30 do
   local pole = table.deepcopy(invisible_pole)
   pole.name = "power-propagation-invisible-pole-" .. i
-  pole.supply_area_distance = 1 + i * 0.5 * range
+  pole.supply_area_distance = 0.5 + i * 0.5 + range * 0.5
   data:extend({ pole })
 end
