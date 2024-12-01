@@ -9,7 +9,8 @@ local function should_extend_power(entity)
   if not prototype then
     return false
   end
-  return prototype.electric_energy_source_prototype ~= nil
+  return false
+    or (settings.startup["power-propagation-through-powered-buildings"].value and prototype.electric_energy_source_prototype ~= nil)
     or (settings.startup["power-propagation-through-walls"].value and prototype.type == "wall")
     or (
       settings.startup["power-propagation-through-rails"].value

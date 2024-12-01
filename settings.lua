@@ -10,16 +10,23 @@ data:extend({
   },
   {
     type = "bool-setting",
+    name = "power-propagation-through-powered-buildings",
+    setting_type = "startup",
+    default_value = true,
+    order = "b",
+  },
+  {
+    type = "bool-setting",
     name = "power-propagation-through-walls",
     setting_type = "startup",
     default_value = false,
-    order = "b",
+    order = "c",
   },
   {
     type = "bool-setting",
     name = "power-propagation-through-rails",
     setting_type = "startup",
     default_value = false,
-    order = "c",
+    order = "d",
   },
 })
