@@ -64,7 +64,11 @@ local function create_power_extender(surface, entity)
   end
   local entity_width = entity.prototype.collision_box.right_bottom.x - entity.prototype.collision_box.left_top.x
   local entity_height = entity.prototype.collision_box.right_bottom.y - entity.prototype.collision_box.left_top.y
-  local pole_type = "power-propagation-invisible-pole-" .. math.max(math.ceil(entity_width), math.ceil(entity_height))
+  local size = math.max(math.ceil(entity_width), math.ceil(entity_height))
+  if size > 0 then
+    return nil
+  end
+  local pole_type = "power-propagation-invisible-pole-" .. size
 
   -- Create a hidden electric pole
   local pole = surface.create_entity({
