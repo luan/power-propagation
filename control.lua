@@ -54,6 +54,30 @@ local function is_powered_position(surface, position)
   return false
 end
 
+local function connect_pole_to_nearby_poles(entity, surface, pole)
+  -- Store the pole's position
+  storage.pole_positions = storage.pole_positions or {}
+  storage.pole_positions[entity.unit_number] = storage.pole_positions[entity.unit_number] or {}
+  table.insert(storage.pole_positions[entity.unit_number], { x = entity.position.x, y = entity.position.y })
+
+  -- Connect to nearby poles
+  local nearby_poles = surface.find_entities_filtered({
+    type = "electric-pole",
+    position = entity.position,
+    radius = 32, -- Maximum possible supply area in van
+  })
+
+  for _, nearby_pole in pairs(nearby_poles) do
+    local distance = math.max(
+      math.abs(entity.position.x - nearby_pole.position.x),
+      math.abs(entity.position.y - nearby_pole.position.y)
+    ) - pole.prototype.get_supply_area_distance(pole.quality)
+    if distance <= nearby_pole.prototype.get_supply_area_distance(nearby_pole.quality) and nearby_pole ~= pole then
+      connect_poles(pole, nearby_pole)
+    end
+  end
+end
+
 -- Create an invisible power pole
 local function create_power_extender(surface, entity)
   -- No need for power propagation if the surface has a global electric network
@@ -78,31 +102,10 @@ local function create_power_extender(surface, entity)
     force = entity.force,
     create_build_effect_smoke = false,
   })
-
-  if pole then
-    -- Store the pole's position
-    storage.pole_positions = storage.pole_positions or {}
-    storage.pole_positions[entity.unit_number] = storage.pole_positions[entity.unit_number] or {}
-    table.insert(storage.pole_positions[entity.unit_number], { x = entity.position.x, y = entity.position.y })
-
-    -- Connect to nearby poles
-    local nearby_poles = surface.find_entities_filtered({
-      type = "electric-pole",
-      position = entity.position,
-      radius = 32, -- Maximum possible supply area in van
-    })
-
-    for _, nearby_pole in pairs(nearby_poles) do
-      local distance = math.max(
-        math.abs(entity.position.x - nearby_pole.position.x),
-        math.abs(entity.position.y - nearby_pole.position.y)
-      ) - pole.prototype.get_supply_area_distance(pole.quality)
-      if distance <= nearby_pole.prototype.get_supply_area_distance(nearby_pole.quality) and nearby_pole ~= pole then
-        connect_poles(pole, nearby_pole)
-      end
-    end
+  if not pole then
+    return nil
   end
-
+  connect_pole_to_nearby_poles(entity, surface, pole)
   return pole
 end
 
