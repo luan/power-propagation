@@ -90,7 +90,7 @@ local function create_power_extender(surface, entity)
   local entity_width = entity.prototype.collision_box.right_bottom.x - entity.prototype.collision_box.left_top.x
   local entity_height = entity.prototype.collision_box.right_bottom.y - entity.prototype.collision_box.left_top.y
   local size = math.max(math.ceil(entity_width), math.ceil(entity_height))
-  if size > 0 then
+  if size < 1 then
     return nil
   end
   local pole_type = "power-propagation-invisible-pole-" .. size
@@ -187,10 +187,28 @@ local function refresh_all_power_poles()
   end
 end
 
+local function on_dolly_moved_entity(event)
+  local entity = event.moved_entity
+  if entity and entity.valid then
+    remove_power_poles(entity)
+    place_power_poles(entity)
+  end
+end
+
 -- Initialize storage table
 script.on_init(function()
   storage.pole_positions = {}
   refresh_all_power_poles()
+
+  if remote.interfaces["PickerDollies"] and remote.interfaces["PickerDollies"]["dolly_moved_entity_id"] then
+    script.on_event(remote.call("PickerDollies", "dolly_moved_entity_id"), on_dolly_moved_entity)
+  end
+end)
+
+script.on_load(function()
+  if remote.interfaces["PickerDollies"] and remote.interfaces["PickerDollies"]["dolly_moved_entity_id"] then
+    script.on_event(remote.call("PickerDollies", "dolly_moved_entity_id"), on_dolly_moved_entity)
+  end
 end)
 
 -- Handle settings changes
