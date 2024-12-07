@@ -187,12 +187,15 @@ local function refresh_all_power_poles()
   end
 end
 
-local function on_dolly_moved_entity(event)
-  local entity = event.moved_entity
+local function on_entity_moved(entity)
   if entity and entity.valid then
     remove_power_poles(entity)
     place_power_poles(entity)
   end
+end
+
+local function on_dolly_moved_entity(event)
+  on_entity_moved(event.moved_entity)
 end
 
 -- Initialize storage table
@@ -218,19 +221,25 @@ script.on_configuration_changed(function(data)
   end
 end)
 
--- Event handler for when an entity is built
-script.on_event(defines.events.on_built_entity, function(event)
-  if event.entity and event.entity.valid then
-    place_power_poles(event.entity)
-  end
+script.on_event(defines.events.script_raised_teleported, function(event)
+  on_entity_moved(event.entity)
 end)
 
--- Event handler for when an entity is placed by robots
-script.on_event(defines.events.on_robot_built_entity, function(event)
-  if event.entity and event.entity.valid then
-    place_power_poles(event.entity)
-  end
-end)
+-- Event handlers for when an entity is created
+local entity_creation_events = {
+  defines.events.on_built_entity,
+  defines.events.on_robot_built_entity,
+  defines.events.script_raised_revive,
+  defines.events.script_raised_built,
+}
+
+for _, event in pairs(entity_creation_events) do
+  script.on_event(event, function(event_data)
+    if event_data.entity and event_data.entity.valid then
+      place_power_poles(event_data.entity)
+    end
+  end)
+end
 
 -- Event handlers for when an entity is removed
 local entity_removal_events = {
@@ -240,6 +249,7 @@ local entity_removal_events = {
   defines.events.script_raised_destroy,
   defines.events.on_player_mined_entity,
   defines.events.on_robot_mined_entity,
+  defines.events.script_raised_destroy,
 }
 
 for _, event in pairs(entity_removal_events) do

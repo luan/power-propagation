@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.4.0
+Date: 2024-12-07
+  Features:
+    - Added support for revived entities (blueprint sandbox, god mode, etc)
+    - Made power poles create connections more aggressively
+---------------------------------------------------------------------------------------------------
 Version: 1.3.0
 Date: 2024-12-01
   Features:
