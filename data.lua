@@ -46,12 +46,12 @@ invisible_pole.connection_points = {
   },
 }
 
--- Set coverage based on spacing
-invisible_pole.supply_area_distance = 0.5 -- Defined in each prototype below 1..n
-invisible_pole.maximum_wire_distance = 1 -- Manually connected in control.lua
+-- Base settings for the invisible pole
+invisible_pole.supply_area_distance = 1
+invisible_pole.maximum_wire_distance = 1 -- Not used since we connect manually
 invisible_pole.draw_copper_wires = false
 invisible_pole.draw_circuit_wires = false
-invisible_pole.auto_connect_up_to_n_wires = 50
+invisible_pole.auto_connect_up_to_n_wires = 0 -- Disable automatic connections
 
 for i = 1, 30 do
   local pole = table.deepcopy(invisible_pole)

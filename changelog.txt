@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.5.0
+Date: 2024-12-08
+  Bugfixes:
+    - Fixed bug where power poles were not connected to nearby entities when poles are placed after the entity
+    - Fixed bug where power extenders weren't properly connecting to each other
+    - Improved connection logic to better match vanilla power pole behavior
+---------------------------------------------------------------------------------------------------
 Version: 1.4.0
 Date: 2024-12-07
   Features:

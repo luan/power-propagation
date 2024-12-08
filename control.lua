@@ -1,5 +1,7 @@
+local propagation = {}
+
 -- Check if an entity can participate in power network
-local function should_extend_power(entity)
+function propagation.should_extend_power(entity)
   if not (entity and entity.valid) then
     return false
   end
@@ -19,8 +21,30 @@ local function should_extend_power(entity)
     )
 end
 
+-- Connect nearby entities to a pole
+function propagation.connect_nearby_entities_to_pole(pole)
+  if not (pole and pole.valid) then
+    return
+  end
+
+  -- Find nearby entities that should extend power
+  local nearby_entities = pole.surface.find_entities_filtered({
+    position = pole.position,
+    radius = pole.prototype.get_supply_area_distance(pole.quality),
+  })
+
+  for _, entity in pairs(nearby_entities) do
+    if propagation.should_extend_power(entity) then
+      -- Remove any existing power poles for this entity
+      propagation.remove_power_poles(entity)
+      -- Create new power extender
+      propagation.place_power_poles(entity)
+    end
+  end
+end
+
 -- Connect two poles together
-local function connect_poles(pole1, pole2)
+function propagation.connect_poles(pole1, pole2)
   if not (pole1 and pole1.valid and pole2 and pole2.valid) then
     return
   end
@@ -33,53 +57,58 @@ local function connect_poles(pole1, pole2)
   connector1.connect_to(connector2, false)
 end
 
--- Check if position is within any pole's supply area
-local function is_powered_position(surface, position)
-  local nearby_poles = surface.find_entities_filtered({
-    type = "electric-pole",
-    position = position,
-    radius = 32, -- Maximum possible supply area in vanilla
-  })
-
-  for _, pole in pairs(nearby_poles) do
-    if pole.valid then
-      local distance = ((position.x - pole.position.x) ^ 2 + (position.y - pole.position.y) ^ 2) ^ 0.5
-      local supply_area = pole.prototype.get_supply_area_distance(pole.quality)
-      if distance <= supply_area then
-        return true
-      end
-    end
-  end
-
-  return false
-end
-
-local function connect_pole_to_nearby_poles(entity, surface, pole)
+function propagation.connect_pole_to_nearby_poles(entity, surface, pole)
   -- Store the pole's position
   storage.pole_positions = storage.pole_positions or {}
   storage.pole_positions[entity.unit_number] = storage.pole_positions[entity.unit_number] or {}
   table.insert(storage.pole_positions[entity.unit_number], { x = entity.position.x, y = entity.position.y })
 
-  -- Connect to nearby poles
+  -- Find ALL poles within maximum possible range
   local nearby_poles = surface.find_entities_filtered({
     type = "electric-pole",
     position = entity.position,
-    radius = 32, -- Maximum possible supply area in van
+    radius = 64, -- Large enough to catch everything
   })
 
-  for _, nearby_pole in pairs(nearby_poles) do
-    local distance = math.max(
-      math.abs(entity.position.x - nearby_pole.position.x),
-      math.abs(entity.position.y - nearby_pole.position.y)
-    ) - pole.prototype.get_supply_area_distance(pole.quality)
-    if distance <= nearby_pole.prototype.get_supply_area_distance(nearby_pole.quality) and nearby_pole ~= pole then
-      connect_poles(pole, nearby_pole)
+  -- For invisible poles, connect to both regular poles and other invisible poles
+  if pole.name:sub(1, 27) == "power-propagation-invisible" then
+    local my_range = pole.prototype.get_supply_area_distance(pole.quality)
+
+    -- First connect to regular poles
+    for _, nearby_pole in pairs(nearby_poles) do
+      if nearby_pole ~= pole and nearby_pole.name:sub(1, 27) ~= "power-propagation-invisible" then
+        local distance =
+          math.sqrt((entity.position.x - nearby_pole.position.x) ^ 2 + (entity.position.y - nearby_pole.position.y) ^ 2)
+
+        -- Use combined range for regular pole connections too
+        local pole_range = nearby_pole.prototype.get_supply_area_distance(nearby_pole.quality)
+        local combined_range = my_range + pole_range
+
+        if distance <= combined_range then
+          propagation.connect_poles(pole, nearby_pole)
+        end
+      end
+    end
+
+    -- Then connect to other invisible poles
+    for _, nearby_pole in pairs(nearby_poles) do
+      if nearby_pole ~= pole and nearby_pole.name:sub(1, 27) == "power-propagation-invisible" then
+        local distance =
+          math.sqrt((entity.position.x - nearby_pole.position.x) ^ 2 + (entity.position.y - nearby_pole.position.y) ^ 2)
+
+        -- Use combined range for invisible pole connections
+        local combined_range = my_range + nearby_pole.prototype.get_supply_area_distance(nearby_pole.quality)
+
+        if distance <= combined_range then
+          propagation.connect_poles(pole, nearby_pole)
+        end
+      end
     end
   end
 end
 
 -- Create an invisible power pole
-local function create_power_extender(surface, entity)
+function propagation.create_power_extender(surface, entity)
   -- No need for power propagation if the surface has a global electric network
   if surface.has_global_electric_network then
     return nil
@@ -105,12 +134,12 @@ local function create_power_extender(surface, entity)
   if not pole then
     return nil
   end
-  connect_pole_to_nearby_poles(entity, surface, pole)
+  propagation.connect_pole_to_nearby_poles(entity, surface, pole)
   return pole
 end
 
 -- Remove power poles owned by an entity
-local function remove_power_poles(entity)
+function propagation.remove_power_poles(entity)
   if not (entity and entity.valid) then
     return
   end
@@ -147,16 +176,16 @@ local function remove_power_poles(entity)
 end
 
 -- Place power poles for an entity
-local function place_power_poles(entity)
-  if not (entity and entity.valid and should_extend_power(entity)) then
+function propagation.place_power_poles(entity)
+  if not (entity and entity.valid and propagation.should_extend_power(entity)) then
     return
   end
 
-  create_power_extender(entity.surface, entity)
+  return propagation.create_power_extender(entity.surface, entity)
 end
 
 -- Refresh power poles for all entities
-local function refresh_all_power_poles()
+function propagation.refresh_all_power_poles()
   -- First remove all existing power poles
   local pole_types = {}
   for i = 1, 30 do
@@ -180,49 +209,49 @@ local function refresh_all_power_poles()
   for _, surface in pairs(game.surfaces) do
     local entities = surface.find_entities()
     for _, entity in pairs(entities) do
-      if entity.valid and should_extend_power(entity) then
-        place_power_poles(entity)
+      if entity.valid and propagation.should_extend_power(entity) then
+        propagation.place_power_poles(entity)
       end
     end
   end
 end
 
-local function on_entity_moved(entity)
+function propagation.on_entity_moved(entity)
   if entity and entity.valid then
-    remove_power_poles(entity)
-    place_power_poles(entity)
+    propagation.remove_power_poles(entity)
+    propagation.place_power_poles(entity)
   end
 end
 
-local function on_dolly_moved_entity(event)
-  on_entity_moved(event.moved_entity)
+function propagation.on_dolly_moved_entity(event)
+  propagation.on_entity_moved(event.moved_entity)
 end
 
 -- Initialize storage table
 script.on_init(function()
   storage.pole_positions = {}
-  refresh_all_power_poles()
+  propagation.refresh_all_power_poles()
 
   if remote.interfaces["PickerDollies"] and remote.interfaces["PickerDollies"]["dolly_moved_entity_id"] then
-    script.on_event(remote.call("PickerDollies", "dolly_moved_entity_id"), on_dolly_moved_entity)
+    script.on_event(remote.call("PickerDollies", "dolly_moved_entity_id"), propagation.on_dolly_moved_entity)
   end
 end)
 
 script.on_load(function()
   if remote.interfaces["PickerDollies"] and remote.interfaces["PickerDollies"]["dolly_moved_entity_id"] then
-    script.on_event(remote.call("PickerDollies", "dolly_moved_entity_id"), on_dolly_moved_entity)
+    script.on_event(remote.call("PickerDollies", "dolly_moved_entity_id"), propagation.on_dolly_moved_entity)
   end
 end)
 
 -- Handle settings changes
 script.on_configuration_changed(function(data)
   if data.mod_startup_settings_changed or data.mod_changes["power-propagation"] ~= nil then
-    refresh_all_power_poles()
+    propagation.refresh_all_power_poles()
   end
 end)
 
 script.on_event(defines.events.script_raised_teleported, function(event)
-  on_entity_moved(event.entity)
+  propagation.on_entity_moved(event.entity)
 end)
 
 -- Event handlers for when an entity is created
@@ -235,8 +264,40 @@ local entity_creation_events = {
 
 for _, event in pairs(entity_creation_events) do
   script.on_event(event, function(event_data)
-    if event_data.entity and event_data.entity.valid then
-      place_power_poles(event_data.entity)
+    local entity = event_data.entity
+    if not (entity and entity.valid) then
+      return
+    end
+
+    if entity.type == "electric-pole" then
+      -- If a power pole was placed, check for nearby entities to connect
+      propagation.connect_nearby_entities_to_pole(entity)
+
+      -- Also check for any nearby extenders that should connect to this pole
+      local nearby_extenders = entity.surface.find_entities_filtered({
+        type = "electric-pole",
+        position = entity.position,
+        radius = 64, -- Large enough to catch everything
+      })
+
+      for _, extender in pairs(nearby_extenders) do
+        if extender.name:sub(1, 27) == "power-propagation-invisible" then
+          local distance =
+            math.sqrt((entity.position.x - extender.position.x) ^ 2 + (entity.position.y - extender.position.y) ^ 2)
+
+          -- Check if the pole is within the extender's range
+          local pole_range = entity.prototype.get_supply_area_distance(entity.quality)
+          local extender_range = extender.prototype.get_supply_area_distance(extender.quality)
+          local combined_range = pole_range + extender_range
+
+          if distance <= combined_range then
+            propagation.connect_poles(entity, extender)
+          end
+        end
+      end
+    else
+      -- For other entities, handle as before
+      propagation.place_power_poles(entity)
     end
   end)
 end
@@ -255,7 +316,7 @@ local entity_removal_events = {
 for _, event in pairs(entity_removal_events) do
   script.on_event(event, function(event_data)
     if event_data.entity and event_data.entity.valid then
-      remove_power_poles(event_data.entity)
+      propagation.remove_power_poles(event_data.entity)
     end
   end)
 end
