@@ -18,6 +18,14 @@ invisible_pole.selection_box = nil
 invisible_pole.collision_box = nil
 invisible_pole.collision_mask = { layers = {} }
 
+invisible_pole.resistances =
+{
+  {
+    type = "electric",
+    percent = 100
+  }
+}
+
 invisible_pole.pictures = {
   layers = {
     {
