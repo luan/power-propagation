@@ -90,6 +90,7 @@ function propagation.create_power_extender(surface, entity)
   if not pole then
     return nil
   end
+  pole.destructible = false
   storage.poles[entity.unit_number] = pole
   propagation.connect_pole_to_nearby_poles(pole)
   return pole
