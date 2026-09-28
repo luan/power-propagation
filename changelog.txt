@@ -1,4 +1,16 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.5.2
+Date: 2026-09-27
+  Changes:
+    - Refresh the mod thumbnail and correct author metadata
+    - Narrow full-surface scans and avoid rebuilding extenders when poles are placed
+  Bugfixes:
+    - Track each entity's own extender so overlapping buildings remove the right pole
+    - Keep power connections within the same force and avoid duplicate wires
+    - Only extend through tracks when the rails setting is enabled, not trains or signals
+    - Rebuild extenders when entities are cloned without keeping orphaned cloned poles
+    - Skip entities larger than the available extender prototypes
+---------------------------------------------------------------------------------------------------
 Version: 1.5.1
 Date: 2024-12-16
   Bugfixes:
